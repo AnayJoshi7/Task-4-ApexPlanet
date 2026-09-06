@@ -36,7 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anay.fitnesstracker.Routes
-
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 
 private val CardBackground = Color(0xFF070708)
 private val PrimaryGreen = Color(0xFF27D07F)
@@ -45,6 +48,7 @@ private val AvatarColor = Color(0xFFD4D4D6)
 private val SettingsItemColor = Color(0xFF5A5B5E)
 private val BottomNavBg = Color(0xFF6B6E70)
 private val BottomNavIconBg = Color(0xFF1E1E1E)
+private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 
 @Composable
 fun ProfileScreen(
@@ -64,65 +68,75 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(backgroundGradient)
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp),
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Title
-        Text(
-            text = "Profile",
-            color = TextWhite,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Avatar
-        Box(
+        // Scrollable content area
+        Column(
             modifier = Modifier
-                .size(105.dp)
-                .clip(CircleShape)
-                .background(AvatarColor)
-        )
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(28.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Profile",
+                color = TextWhite,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        // User Name
-        Text(
-            text = "Anay Joshi",
-            color = PrimaryGreen,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(modifier = Modifier.height(22.dp))
+            Box(
+                modifier = Modifier
+                    .size(105.dp)
+                    .clip(CircleShape)
+                    .background(AvatarColor)
+            )
 
-        // User Info Card
-        UserInfoCard()
+            Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(26.dp))
+            Text(
+                text = "Anay Joshi",
+                color = PrimaryGreen,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        // Settings Container Card
-        SettingsCard()
+            Spacer(modifier = Modifier.height(22.dp))
 
-        Spacer(modifier = Modifier.weight(1f))
+            UserInfoCard()
 
-        // Divider
-        HorizontalDivider(
-            color = Color(0xFF8E9094),
-            thickness = 1.dp,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+            Spacer(modifier = Modifier.height(26.dp))
 
-        Spacer(modifier = Modifier.height(14.dp))
+            SettingsCard()
 
-        // Bottom Navigation Bar
-        BottomNavigationBar(onNavigate)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        // Fixed bottom container matching the exact dashboard width
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            HorizontalDivider(
+                color = Color(0xFF8E9094),
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            BottomNavigationBar(onNavigate = onNavigate)
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
     }
 }
 
@@ -238,58 +252,54 @@ private fun BottomNavigationBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(64.dp) // Enforces rigid height against DPI shrinkage
             .clip(RoundedCornerShape(22.dp))
             .background(BottomNavBg)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomNavItem(
             icon = Icons.Default.Home,
             label = "Home",
-            selected = true,
-            onClick = {
-                onNavigate(Routes.DASHBOARD)
-            }
+            selected = false,
+            onClick = { onNavigate(Routes.DASHBOARD) }
         )
         BottomNavItem(
             icon = Icons.Default.FitnessCenter,
             label = "Workouts",
             selected = false,
-            onClick = {
-                onNavigate(Routes.WORKOUTS)
-            }
+            onClick = { onNavigate(Routes.WORKOUTS) }
         )
         BottomNavItem(
             icon = Icons.Default.Leaderboard,
             label = "Progress",
             selected = false,
-            onClick = {
-                onNavigate(Routes.PROGRESS)
-            }
+            onClick = { onNavigate(Routes.PROGRESS) }
         )
         BottomNavItem(
             icon = Icons.Default.Person,
             label = "Profile",
-            selected = false,
-            onClick = {
-                onNavigate(Routes.PROFILE)
-            }
+            selected = true,
+            onClick = { onNavigate(Routes.PROFILE) }
         )
     }
 }
 
 @Composable
-private fun BottomNavItem(
+private fun RowScope.BottomNavItem(
     icon: ImageVector,
     label: String,
     selected: Boolean,
     onClick: () -> Unit
-){
+) {
     Column(
-        modifier = Modifier.clickable {
-            onClick()
-        },
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) SelectedTabBg else Color.Transparent)
+            .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -297,7 +307,7 @@ private fun BottomNavItem(
             imageVector = icon,
             contentDescription = label,
             tint = BottomNavIconBg,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(22.dp)
         )
 
         Spacer(modifier = Modifier.height(2.dp))
@@ -306,7 +316,51 @@ private fun BottomNavItem(
             text = label,
             color = BottomNavIconBg,
             fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
+    }
+}
+
+@Composable
+private fun BottomNavItem(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    if (selected) SelectedTabBg
+                    else Color.Transparent
+                )
+                .clickable { onClick() }
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = BottomNavIconBg,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = label,
+                color = BottomNavIconBg,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }

@@ -1,7 +1,7 @@
 package com.anay.fitnesstracker.Screens
 
-import com.anay.fitnesstracker.Routes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.foundation.clickable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -40,18 +39,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.anay.fitnesstracker.Routes
+
 private val CardBackground = Color(0xFF070708)
 private val PrimaryGreen = Color(0xFF27D07F)
 private val TextWhite = Color(0xFFFFFFFF)
 private val TextMuted = Color(0xFF9E9E9E)
 private val BottomNavBg = Color(0xFF6B6E70)
 private val BottomNavIconBg = Color(0xFF1E1E1E)
+private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 
 @Composable
 fun DashboardScreen(
     onNavigate: (String) -> Unit
 ) {
-    // Background vertical radial/linear dark gradient
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1B1C1E),
@@ -66,77 +67,87 @@ fun DashboardScreen(
             .fillMaxSize()
             .background(backgroundGradient)
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp),
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Greeting
-        Text(
-            text = "Greetings, Anay 👋",
-            color = TextWhite,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Progress Card
-        ProgressCard()
-
-        Spacer(modifier = Modifier.height(36.dp))
-
-        // Statistics Cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(18.dp)
+        // Main content area
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            StatCard(
-                title = "Calories",
-                value = "420",
-                unit = "Kcal"
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Greeting
+            Text(
+                text = "Greetings, Anay 👋",
+                color = TextWhite,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
-            StatCard(
-                title = "Steps",
-                value = "8,341",
-                unit = ""
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Progress Card
+            ProgressCard()
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            // Statistics Cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                StatCard(
+                    title = "Calories",
+                    value = "420",
+                    unit = "Kcal"
+                )
+                StatCard(
+                    title = "Steps",
+                    value = "8,341",
+                    unit = ""
+                )
+            }
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            // Today's Workout Header
+            Text(
+                text = "Today’s Workout",
+                modifier = Modifier.fillMaxWidth(),
+                color = PrimaryGreen,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold
             )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Workout Card
+            WorkoutCard()
         }
 
-        Spacer(modifier = Modifier.height(36.dp))
+        // Fixed bottom container (identical structure and width across all screens)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            HorizontalDivider(
+                color = Color(0xFF8E9094),
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
 
-        // Today's Workout Header
-        Text(
-            text = "Today’s Workout",
-            modifier = Modifier.fillMaxWidth(),
-            color = PrimaryGreen,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(18.dp))
+            BottomNavigationBar(onNavigate = onNavigate)
 
-        // Workout Card
-        WorkoutCard()
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Divider
-        HorizontalDivider(
-            color = Color(0xFF8E9094),
-            thickness = 1.dp,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Bottom Navigation Bar
-        BottomNavigationBar(
-            onNavigate = onNavigate
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+        }
     }
 }
 
@@ -181,11 +192,11 @@ private fun ProgressCard() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
-        ){
+        ) {
             Box(
                 modifier = Modifier
                     .size(width = 100.dp, height = 12.dp)
-                    .clip(RoundedCornerShape(3.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(Color(0xFF5E6065))
             ) {
                 Box(
@@ -314,43 +325,72 @@ private fun BottomNavigationBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(64.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(BottomNavBg)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomNavItem(
             icon = Icons.Default.Home,
             label = "Home",
             selected = true,
-            onClick = {
-                onNavigate(Routes.DASHBOARD)
-            }
+            onClick = { onNavigate(Routes.DASHBOARD) }
         )
         BottomNavItem(
             icon = Icons.Default.FitnessCenter,
             label = "Workouts",
             selected = false,
-            onClick = {
-                onNavigate(Routes.WORKOUTS)
-            }
+            onClick = { onNavigate(Routes.WORKOUTS) }
         )
         BottomNavItem(
             icon = Icons.Default.Leaderboard,
             label = "Progress",
             selected = false,
-            onClick = {
-                onNavigate(Routes.PROGRESS)
-            }
+            onClick = { onNavigate(Routes.PROGRESS) }
         )
         BottomNavItem(
             icon = Icons.Default.Person,
             label = "Profile",
             selected = false,
-            onClick = {
-                onNavigate(Routes.PROFILE)
-            }
+            onClick = { onNavigate(Routes.PROFILE) }
+        )
+    }
+}
+
+@Composable
+private fun RowScope.BottomNavItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) SelectedTabBg else Color.Transparent)
+            .clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = BottomNavIconBg,
+            modifier = Modifier.size(22.dp)
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = label,
+            color = BottomNavIconBg,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
     }
 }
@@ -361,11 +401,13 @@ private fun BottomNavItem(
     label: String,
     selected: Boolean,
     onClick: () -> Unit
-){
+) {
     Column(
-        modifier = Modifier.clickable {
-            onClick()
-        },
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) SelectedTabBg else Color.Transparent)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

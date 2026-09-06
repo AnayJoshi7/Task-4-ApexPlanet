@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anay.fitnesstracker.Routes
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 
 private val CardBackground = Color(0xFF070708)
@@ -43,6 +46,8 @@ private val PrimaryGreen = Color(0xFF27D07F)
 private val TextWhite = Color(0xFFFFFFFF)
 private val BottomNavBg = Color(0xFF6B6E70)
 private val BottomNavIconBg = Color(0xFF1E1E1E)
+
+private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 
 @Composable
 fun ProgressScreen(
@@ -286,58 +291,54 @@ private fun BottomNavigationBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(64.dp) // Enforces rigid height against DPI shrinkage
             .clip(RoundedCornerShape(22.dp))
             .background(BottomNavBg)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomNavItem(
             icon = Icons.Default.Home,
             label = "Home",
-            selected = true,
-            onClick = {
-                onNavigate(Routes.DASHBOARD)
-            }
+            selected = false,
+            onClick = { onNavigate(Routes.DASHBOARD) }
         )
         BottomNavItem(
             icon = Icons.Default.FitnessCenter,
             label = "Workouts",
             selected = false,
-            onClick = {
-                onNavigate(Routes.WORKOUTS)
-            }
+            onClick = { onNavigate(Routes.WORKOUTS) }
         )
         BottomNavItem(
             icon = Icons.Default.Leaderboard,
             label = "Progress",
-            selected = false,
-            onClick = {
-                onNavigate(Routes.PROGRESS)
-            }
+            selected = true,
+            onClick = { onNavigate(Routes.PROGRESS) }
         )
         BottomNavItem(
             icon = Icons.Default.Person,
             label = "Profile",
             selected = false,
-            onClick = {
-                onNavigate(Routes.PROFILE)
-            }
+            onClick = { onNavigate(Routes.PROFILE) }
         )
     }
 }
 
 @Composable
-private fun BottomNavItem(
+private fun RowScope.BottomNavItem(
     icon: ImageVector,
     label: String,
     selected: Boolean,
     onClick: () -> Unit
-){
+) {
     Column(
-        modifier = Modifier.clickable {
-            onClick()
-        },
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) SelectedTabBg else Color.Transparent)
+            .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -345,7 +346,7 @@ private fun BottomNavItem(
             imageVector = icon,
             contentDescription = label,
             tint = BottomNavIconBg,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(22.dp)
         )
 
         Spacer(modifier = Modifier.height(2.dp))
@@ -354,7 +355,51 @@ private fun BottomNavItem(
             text = label,
             color = BottomNavIconBg,
             fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
+    }
+}
+
+@Composable
+private fun BottomNavItem(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    if (selected) SelectedTabBg
+                    else Color.Transparent
+                )
+                .clickable { onClick() }
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = BottomNavIconBg,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = label,
+                color = BottomNavIconBg,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
