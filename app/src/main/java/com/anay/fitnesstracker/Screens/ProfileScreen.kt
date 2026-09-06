@@ -40,7 +40,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.anay.fitnesstracker.data.viewmodel.ProfileViewModel
+import com.anay.fitnesstracker.data.model.Profile
+import androidx.compose.material3.CircularProgressIndicator
 private val CardBackground = Color(0xFF070708)
 private val PrimaryGreen = Color(0xFF27D07F)
 private val TextWhite = Color(0xFFFFFFFF)
@@ -52,8 +56,12 @@ private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 
 @Composable
 fun ProfileScreen(
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    profileViewModel: ProfileViewModel = viewModel()
 ) {
+    val profile = profileViewModel.profile.collectAsState().value
+    val isLoading = profileViewModel.isLoading.collectAsState().value
+    val error = profileViewModel.error.collectAsState().value
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1B1C1E),
@@ -101,7 +109,11 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Anay Joshi",
+                text = when {
+                    isLoading -> "Loading..."
+                    error != null -> "Unable to load"
+                    else -> profile?.name ?: "Unknown"
+                },
                 color = PrimaryGreen,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
@@ -109,7 +121,10 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            UserInfoCard()
+            UserInfoCard(
+                profile = profile,
+                isLoading = isLoading
+            )
 
             Spacer(modifier = Modifier.height(26.dp))
 
@@ -141,7 +156,10 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun UserInfoCard() {
+private fun UserInfoCard(
+    profile: Profile?,
+    isLoading: Boolean
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -150,10 +168,25 @@ private fun UserInfoCard() {
             .padding(horizontal = 22.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        ProfileInfoRow(label = "Age", value = "21 yrs")
-        ProfileInfoRow(label = "Height", value = "184 cm")
-        ProfileInfoRow(label = "Current Weight", value = "75 kg")
-        ProfileInfoRow(label = "Goal", value = "Build muscle")
+        ProfileInfoRow(
+            label = "Age",
+            value = if (isLoading) "..." else "${profile?.age ?: "-"} yrs"
+        )
+
+        ProfileInfoRow(
+            label = "Height",
+            value = if (isLoading) "..." else "${profile?.height ?: "-"} cm"
+        )
+
+        ProfileInfoRow(
+            label = "Current Weight",
+            value = if (isLoading) "..." else "${profile?.weight ?: "-"} kg"
+        )
+
+        ProfileInfoRow(
+            label = "Goal",
+            value = if (isLoading) "..." else profile?.goal ?: "-"
+        )
     }
 }
 
