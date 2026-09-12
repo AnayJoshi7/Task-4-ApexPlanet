@@ -2,19 +2,19 @@ package com.anay.fitnesstracker.data.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anay.fitnesstracker.data.model.Profile
-import com.anay.fitnesstracker.data.repository.ProfileRepository
+import com.anay.fitnesstracker.data.model.Workout
+import com.anay.fitnesstracker.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ProfileViewModel : ViewModel() {
+class WorkoutViewModel : ViewModel() {
 
-    private val repository = ProfileRepository()
+    private val repository = WorkoutRepository()
 
-    private val _profile = MutableStateFlow<Profile?>(null)
-    val profile: StateFlow<Profile?> = _profile.asStateFlow()
+    private val _workouts = MutableStateFlow<List<Workout>>(emptyList())
+    val workouts: StateFlow<List<Workout>> = _workouts.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -23,21 +23,23 @@ class ProfileViewModel : ViewModel() {
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
-        loadProfile()
+        loadWorkouts()
     }
 
-    fun loadProfile() {
+    fun loadWorkouts() {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _error.value = null
 
-                _profile.value = repository.getProfile()
+                _workouts.value = repository.getWorkouts()
+                _workouts.value.forEach {
+
+                }
 
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load profile"
-                android.util.Log.e("ProfileViewModel", "Failed to load profile", e)
-            }finally {
+                _error.value = e.message ?: "Failed to load workouts"
+            } finally {
                 _isLoading.value = false
             }
         }

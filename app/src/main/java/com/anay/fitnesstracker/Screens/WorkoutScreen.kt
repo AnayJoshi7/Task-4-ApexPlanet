@@ -40,6 +40,11 @@ import com.anay.fitnesstracker.Routes
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.RowScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.anay.fitnesstracker.data.model.Workout
+import com.anay.fitnesstracker.data.viewmodel.WorkoutViewModel
+import androidx.compose.material3.CircularProgressIndicator
 
 
 
@@ -54,8 +59,12 @@ private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 
 @Composable
 fun WorkoutsScreen(
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    workoutViewModel: WorkoutViewModel = viewModel()
 ) {
+    val workouts = workoutViewModel.workouts.collectAsState().value
+    val isLoading = workoutViewModel.isLoading.collectAsState().value
+    val error = workoutViewModel.error.collectAsState().value
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1B1C1E),
@@ -86,49 +95,102 @@ fun WorkoutsScreen(
 
         Spacer(modifier = Modifier.height(36.dp))
 
-        // Today's Workout Section
-        Text(
-            text = "Today’s Workout",
-            modifier = Modifier.fillMaxWidth(),
-            color = PrimaryGreen,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold
-        )
 
-        Spacer(modifier = Modifier.height(18.dp))
 
-        WorkoutItem(
-            title = "Push Day",
-            muscles = "Chest, Shoulder, Triceps",
-            exercises = "7 Exercises"
-        )
+
+        when {
+            isLoading -> {
+                CircularProgressIndicator(
+                    color = PrimaryGreen,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            error != null -> {
+                Text(
+                    text = "Unable to load workouts",
+                    color = TextWhite,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Tap Retry to try again",
+                    color = TextMuted,
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Retry",
+                    color = PrimaryGreen,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                        workoutViewModel.loadWorkouts()
+                    }
+                )
+            }
+
+            workouts.isNotEmpty() -> {
+                Text(
+                    text = "Today's Workout",
+                    modifier = Modifier.fillMaxWidth(),
+                    color = PrimaryGreen,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                workouts.firstOrNull { it.isToday }?.let { workout ->
+                    WorkoutItem(
+                        title = workout.title,
+                        muscles = workout.muscles,
+                        exercises = "${workout.exercises} Exercises"
+                    )
+                }
+
+                if (workouts.any { !it.isToday }) {
+                    Spacer(modifier = Modifier.height(36.dp))
+
+                    Text(
+                        text = "Other Workouts",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = PrimaryGreen,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    workouts.filter { !it.isToday }.forEach { workout ->
+                        WorkoutItem(
+                            title = workout.title,
+                            muscles = workout.muscles,
+                            exercises = "${workout.exercises} Exercises"
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+                    }
+                }
+            }
+
+            else -> {
+                Text(
+                    text = "No workouts available",
+                    color = TextMuted,
+                    fontSize = 16.sp
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(36.dp))
 
-        // Other Workouts Section
-        Text(
-            text = "Other Workouts",
-            modifier = Modifier.fillMaxWidth(),
-            color = PrimaryGreen,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold
-        )
 
-        Spacer(modifier = Modifier.height(18.dp))
-
-        WorkoutItem(
-            title = "Pull Day",
-            muscles = "Back, Biceps",
-            exercises = "8 Exercises"
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        WorkoutItem(
-            title = "Leg Day",
-            muscles = "Legs, Abs",
-            exercises = "9 Exercises"
-        )
 
         Spacer(modifier = Modifier.weight(1f))
 

@@ -118,6 +118,27 @@ fun ProfileScreen(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
+            if (error != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Unable to load profile",
+                    color = Color(0xFFFF6B6B),
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Retry",
+                    color = PrimaryGreen,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                        profileViewModel.loadProfile()
+                    }
+                )
+            }
 
             Spacer(modifier = Modifier.height(22.dp))
 
