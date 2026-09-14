@@ -11,7 +11,7 @@ class ProfileRepository {
     suspend fun getProfile(): Profile {
         val snapshot = firestore
             .collection("profile")
-            .document("does not exist")
+            .document("anay")
             .get()
             .await()
 

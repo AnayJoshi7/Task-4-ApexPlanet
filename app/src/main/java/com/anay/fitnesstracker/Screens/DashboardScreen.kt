@@ -40,6 +40,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anay.fitnesstracker.Routes
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.anay.fitnesstracker.data.viewmodel.QuoteViewModel
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 private val CardBackground = Color(0xFF070708)
 private val PrimaryGreen = Color(0xFF27D07F)
@@ -51,8 +65,12 @@ private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 
 @Composable
 fun DashboardScreen(
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    quoteViewModel: QuoteViewModel = viewModel()
 ) {
+    val quote = quoteViewModel.quote.collectAsState().value
+    val isLoading = quoteViewModel.isLoading.collectAsState().value
+    val error = quoteViewModel.error.collectAsState().value
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1B1C1E),
@@ -75,6 +93,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -112,7 +131,30 @@ fun DashboardScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Daily Motivation
+            Text(
+                text = "Quote Of The Day",
+                modifier = Modifier.fillMaxWidth(),
+                color = PrimaryGreen,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            MotivationCard(
+                quote = quote?.quote,
+                author = quote?.author,
+                isLoading = isLoading,
+                error = error,
+                onRetry = {
+                    quoteViewModel.loadQuote()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Today's Workout Header
             Text(
@@ -127,6 +169,7 @@ fun DashboardScreen(
 
             // Workout Card
             WorkoutCard()
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         // Fixed bottom container (identical structure and width across all screens)
@@ -147,6 +190,97 @@ fun DashboardScreen(
             BottomNavigationBar(onNavigate = onNavigate)
 
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+fun MotivationCard(
+    quote: String?,
+    author: String?,
+    isLoading: Boolean,
+    error: String?,
+    onRetry: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF000000)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp)
+        ) {
+
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(70.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = PrimaryGreen,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                error != null -> {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Unable to load quote of the day",
+                            color = TextWhite,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Tap Retry to try again",
+                            color = TextMuted,
+                            fontSize = 12.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Retry",
+                            color = PrimaryGreen,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                onRetry()
+                            }
+                        )
+                    }
+                }
+
+                quote != null -> {
+                    Text(
+                        text = "\"$quote\"",
+                        color = TextWhite,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "— $author",
+                        color = TextMuted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -228,7 +362,7 @@ private fun RowScope.StatCard(
     Column(
         modifier = Modifier
             .weight(1f)
-            .aspectRatio(1.02f)
+            .aspectRatio(1.50f)
             .clip(RoundedCornerShape(24.dp))
             .background(CardBackground)
             .padding(16.dp),
