@@ -11,6 +11,25 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+
+val BgGradient = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xFF1B1C1E),
+        Color(0xFF131416),
+        Color(0xFF2C2E31),
+        Color(0xFF111214)
+    )
+)
+
+val CardBackground = Color(0xFF070708)
+val PrimaryGreen = Color(0xFF27D07F)
+val SelectedGreen = Color(0xFF2EAA68)
+val TextWhite = Color(0xFFFFFFFF)
+val TextMuted = Color(0xFF9E9E9E)
+val InputFieldBg = Color(0xFFFFFFFF)
+
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,

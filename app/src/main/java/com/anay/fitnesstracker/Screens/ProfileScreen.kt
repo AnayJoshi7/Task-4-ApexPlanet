@@ -1,4 +1,4 @@
-package com.anay.fitnesstracker.screens
+package com.anay.fitnesstracker.Screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,8 +16,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -26,6 +30,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,15 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anay.fitnesstracker.Routes
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
-import com.anay.fitnesstracker.data.viewmodel.ProfileViewModel
-import com.anay.fitnesstracker.data.model.Profile
-import androidx.compose.material3.CircularProgressIndicator
+import com.anay.fitnesstracker.data.UserProfile
+import com.anay.fitnesstracker.data.viewmodel.FitnessViewModel
+
 private val CardBackground = Color(0xFF070708)
 private val PrimaryGreen = Color(0xFF27D07F)
 private val TextWhite = Color(0xFFFFFFFF)
@@ -57,11 +57,10 @@ private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 @Composable
 fun ProfileScreen(
     onNavigate: (String) -> Unit,
-    profileViewModel: ProfileViewModel = viewModel()
+    fitnessViewModel: FitnessViewModel
 ) {
-    val profile = profileViewModel.profile.collectAsState().value
-    val isLoading = profileViewModel.isLoading.collectAsState().value
-    val error = profileViewModel.error.collectAsState().value
+    val user by fitnessViewModel.currentUser.collectAsState()
+
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1B1C1E),
@@ -79,7 +78,6 @@ fun ProfileScreen(
             .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Scrollable content area
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -109,43 +107,15 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = when {
-                    isLoading -> "Loading..."
-                    error != null -> "Unable to load"
-                    else -> profile?.name ?: "Unknown"
-                },
+                text = user?.name?.ifBlank { "User Profile" } ?: "User Profile",
                 color = PrimaryGreen,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
-            if (error != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Unable to load profile",
-                    color = Color(0xFFFF6B6B),
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Retry",
-                    color = PrimaryGreen,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable {
-                        profileViewModel.loadProfile()
-                    }
-                )
-            }
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            UserInfoCard(
-                profile = profile,
-                isLoading = isLoading
-            )
+            UserInfoCard(user = user)
 
             Spacer(modifier = Modifier.height(26.dp))
 
@@ -154,7 +124,6 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Fixed bottom container matching the exact dashboard width
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -177,36 +146,37 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun UserInfoCard(
-    profile: Profile?,
-    isLoading: Boolean
-) {
+private fun UserInfoCard(user: UserProfile?) {
+    val calculatedAge = if (user != null && user.birthYear > 0) {
+        (2026 - user.birthYear).coerceAtLeast(0)
+    } else null
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(CardBackground)
             .padding(horizontal = 22.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         ProfileInfoRow(
             label = "Age",
-            value = if (isLoading) "..." else "${profile?.age ?: "-"} yrs"
+            value = calculatedAge?.let { "$it yrs" } ?: "-"
         )
 
         ProfileInfoRow(
             label = "Height",
-            value = if (isLoading) "..." else "${profile?.height ?: "-"} cm"
+            value = user?.heightCm?.let { "${it.toInt()} cm" } ?: "-"
         )
 
         ProfileInfoRow(
             label = "Current Weight",
-            value = if (isLoading) "..." else "${profile?.weight ?: "-"} kg"
+            value = user?.weightKg?.let { "${it.toInt()} kg" } ?: "-"
         )
 
         ProfileInfoRow(
             label = "Goal",
-            value = if (isLoading) "..." else profile?.goal ?: "-"
+            value = user?.fitnessGoal ?: "-"
         )
     }
 }
@@ -306,7 +276,7 @@ private fun BottomNavigationBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp) // Enforces rigid height against DPI shrinkage
+            .height(64.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(BottomNavBg)
             .padding(horizontal = 8.dp, vertical = 6.dp),
@@ -373,48 +343,5 @@ private fun RowScope.BottomNavItem(
             fontWeight = FontWeight.SemiBold,
             maxLines = 1
         )
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    if (selected) SelectedTabBg
-                    else Color.Transparent
-                )
-                .clickable { onClick() }
-                .padding(horizontal = 14.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = BottomNavIconBg,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = label,
-                color = BottomNavIconBg,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
     }
 }

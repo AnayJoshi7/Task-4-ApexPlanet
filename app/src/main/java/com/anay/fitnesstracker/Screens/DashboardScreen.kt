@@ -18,18 +18,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,21 +46,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.anay.fitnesstracker.Routes
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
+import com.anay.fitnesstracker.Routes
+import com.anay.fitnesstracker.data.viewmodel.FitnessViewModel
 import com.anay.fitnesstracker.data.viewmodel.QuoteViewModel
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 
 private val CardBackground = Color(0xFF070708)
 private val PrimaryGreen = Color(0xFF27D07F)
@@ -66,11 +62,18 @@ private val SelectedTabBg = Color(0xFF3DDC84).copy(alpha = 0.30f)
 @Composable
 fun DashboardScreen(
     onNavigate: (String) -> Unit,
+    onNavigateMealLog: () -> Unit,
+    fitnessViewModel: FitnessViewModel,
     quoteViewModel: QuoteViewModel = viewModel()
 ) {
+    val user by fitnessViewModel.currentUser.collectAsState()
+    val totalCaloriesConsumed = user?.meals?.sumOf { it.calories } ?: 0
+    val calorieTarget = user?.dailyCalorieGoal ?: 2200
+
     val quote = quoteViewModel.quote.collectAsState().value
     val isLoading = quoteViewModel.isLoading.collectAsState().value
     val error = quoteViewModel.error.collectAsState().value
+
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1B1C1E),
@@ -101,7 +104,7 @@ fun DashboardScreen(
 
             // Greeting
             Text(
-                text = "Greetings, Anay 👋",
+                text = "Greetings, ${user?.name?.ifBlank { "Anay" } ?: "Anay"} 👋",
                 color = TextWhite,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
@@ -119,16 +122,27 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                StatCard(
-                    title = "Calories",
-                    value = "420",
-                    unit = "Kcal"
-                )
-                StatCard(
-                    title = "Steps",
-                    value = "8,341",
-                    unit = ""
-                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onNavigateMealLog() }
+                ) {
+                    StatCard(
+                        title = "Calories",
+                        value = "$totalCaloriesConsumed",
+                        unit = "of $calorieTarget Kcal"
+                    )
+                }
+
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    StatCard(
+                        title = "Steps",
+                        value = "8,341",
+                        unit = "of ${user?.dailyStepGoal ?: 10000} steps"
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -167,12 +181,17 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Workout Card
-            WorkoutCard()
+            // Dynamic Workout Card
+            WorkoutCard(
+                splitName = user?.workoutSplit ?: "Push Day",
+                workoutFrequency = user?.workoutFrequency ?: "6 Days a Week",
+                fitnessGoal = user?.fitnessGoal ?: "Maintain Weight"
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Fixed bottom container (identical structure and width across all screens)
+        // Fixed bottom container
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -214,7 +233,6 @@ fun MotivationCard(
                 .fillMaxWidth()
                 .padding(18.dp)
         ) {
-
             when {
                 isLoading -> {
                     Box(
@@ -354,14 +372,14 @@ private fun ProgressCard() {
 }
 
 @Composable
-private fun RowScope.StatCard(
+private fun StatCard(
     title: String,
     value: String,
     unit: String
 ) {
     Column(
         modifier = Modifier
-            .weight(1f)
+            .fillMaxWidth()
             .aspectRatio(1.50f)
             .clip(RoundedCornerShape(24.dp))
             .background(CardBackground)
@@ -398,7 +416,11 @@ private fun RowScope.StatCard(
 }
 
 @Composable
-private fun WorkoutCard() {
+private fun WorkoutCard(
+    splitName: String,
+    workoutFrequency: String,
+    fitnessGoal: String
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -411,7 +433,7 @@ private fun WorkoutCard() {
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "Push Day",
+                text = splitName,
                 color = TextWhite,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
@@ -420,21 +442,20 @@ private fun WorkoutCard() {
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "Chest, Shoulder, Triceps",
+                text = "Assigned from $workoutFrequency",
                 color = TextWhite,
                 fontSize = 14.sp
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "7 Exercises",
+                text = "Goal: $fitnessGoal",
                 color = TextMuted,
                 fontSize = 12.sp
             )
         }
 
-        // Circular Action Arrow Button
         Box(
             modifier = Modifier
                 .size(34.dp)
@@ -525,40 +546,6 @@ private fun RowScope.BottomNavItem(
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) SelectedTabBg else Color.Transparent)
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = BottomNavIconBg,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        Text(
-            text = label,
-            color = BottomNavIconBg,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold
         )
     }
 }
