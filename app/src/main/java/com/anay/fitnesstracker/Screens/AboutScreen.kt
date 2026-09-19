@@ -80,7 +80,11 @@ fun AboutScreen(
                 .background(CardBackground),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = Color.White, modifier = Modifier.size(38.dp))
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo),
+                contentDescription = null,
+                modifier = Modifier.size(38.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
