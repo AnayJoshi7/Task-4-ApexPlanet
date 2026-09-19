@@ -1,10 +1,30 @@
 package com.anay.fitnesstracker.data
 
+data class WorkoutSet(
+    val setNumber: Int = 1,
+    val weightKg: String = "",
+    val reps: String = ""
+)
+
+data class LoggedExercise(
+    val id: String = "",
+    val exerciseName: String = "",
+    val sets: List<WorkoutSet> = emptyList(),
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+data class NotificationItem(
+    val id: String = "",
+    val message: String = "",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 data class MealItem(
     val id: String = "",
     val name: String = "",
     val calories: Int = 0,
-    val protein: Int = 0
+    val protein: Int = 0,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 data class UserProfile(
@@ -24,5 +44,8 @@ data class UserProfile(
     val dailyCalorieGoal: Int = 2000,
     val dailyProteinGoal: Int = 120,
     val dailyStepGoal: Int = 10000,
-    val meals: List<MealItem> = emptyList()
+    val avatarBase64: String? = null,
+    val meals: List<MealItem> = emptyList(),
+    val loggedWorkouts: List<LoggedExercise> = emptyList(),
+    val notifications: List<NotificationItem> = emptyList()
 )

@@ -1,4 +1,4 @@
-package com.anay.fitnesstracker.screens
+package com.anay.fitnesstracker.Screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background

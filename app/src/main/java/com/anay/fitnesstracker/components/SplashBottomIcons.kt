@@ -33,6 +33,7 @@ fun SplashBottomIcons(
                 modifier = Modifier
                     .size(44.dp)
                     .rotate(-28f)
+                    .offset(y = (-5).dp)
             )
             Image(
                 painter = painterResource(id = R.drawable.ic_bench),
@@ -44,7 +45,9 @@ fun SplashBottomIcons(
             Image(
                 painter = painterResource(id = R.drawable.ic_rope),
                 contentDescription = null,
-                modifier = Modifier.size(42.dp)
+                modifier = Modifier
+                    .size(42.dp)
+                    .offset(y = (-4).dp)
             )
         }
 

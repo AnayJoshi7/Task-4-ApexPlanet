@@ -1,4 +1,4 @@
-package com.anay.fitnesstracker.screens
+package com.anay.fitnesstracker.Screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.sp
 import com.anay.fitnesstracker.components.NextPillButton
 import com.anay.fitnesstracker.ui.theme.*
 import com.anay.fitnesstracker.data.viewmodel.FitnessViewModel
+import com.anay.fitnesstracker.components.icons
+
 
 @Composable
 fun PreferencesScreen(
@@ -29,7 +31,10 @@ fun PreferencesScreen(
     val frequencies = listOf("3 Days a Week", "4 Days a Week", "5 Days a Week", "6 Days a Week")
     val splits = listOf("Push Pull Legs", "Upper Body, Lower Body", "Full Body", "Upper, Lower + Push Pull Legs")
 
+    Spacer(modifier = Modifier.height(28.dp))
+
     Column(
+
         modifier = Modifier
             .fillMaxSize()
             .background(BgGradient)
@@ -129,6 +134,7 @@ fun PreferencesScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             }
+            icons()
 
             Spacer(modifier = Modifier.height(24.dp))
         }

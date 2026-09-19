@@ -1,8 +1,11 @@
 package com.anay.fitnesstracker.data.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.anay.fitnesstracker.data.*
+import com.anay.fitnesstracker.util.ImageUtils
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,8 +14,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
-class FitnessViewModel : ViewModel() {
+class FitnessViewModel(application: Application) : AndroidViewModel(application) {
     private val db = FirebaseFirestore.getInstance()
+    private val sessionManager = SessionManager(application)
 
     private val _currentUser = MutableStateFlow<UserProfile?>(null)
     val currentUser: StateFlow<UserProfile?> = _currentUser.asStateFlow()
@@ -22,6 +26,35 @@ class FitnessViewModel : ViewModel() {
 
     private val _highlightedSplit = MutableStateFlow<String?>(null)
     val highlightedSplit: StateFlow<String?> = _highlightedSplit.asStateFlow()
+
+    private val _isSessionChecking = MutableStateFlow(true)
+    val isSessionChecking: StateFlow<Boolean> = _isSessionChecking.asStateFlow()
+
+    init {
+        checkSavedSession()
+    }
+
+    private fun checkSavedSession() {
+        val savedUsername = sessionManager.getUsername()
+        if (!savedUsername.isNullOrEmpty()) {
+            viewModelScope.launch {
+                try {
+                    val snapshot = db.collection("users").document(savedUsername).get().await()
+                    if (snapshot.exists()) {
+                        _currentUser.value = snapshot.toObject(UserProfile::class.java)
+                    } else {
+                        sessionManager.clearSession()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    _isSessionChecking.value = false
+                }
+            }
+        } else {
+            _isSessionChecking.value = false
+        }
+    }
 
     fun updateInitialDetails(
         name: String,
@@ -76,17 +109,62 @@ class FitnessViewModel : ViewModel() {
         _tempOnboarding.value = _tempOnboarding.value.copy(workoutSplit = split)
         _highlightedSplit.value = split
     }
+    fun logExercise(exerciseName: String, sets: List<WorkoutSet>) {
+        val user = _currentUser.value ?: return
+        val newEntry = LoggedExercise(
+            id = UUID.randomUUID().toString(),
+            exerciseName = exerciseName,
+            sets = sets,
+            timestamp = System.currentTimeMillis()
+        )
+
+        val updatedWorkouts = listOf(newEntry) + user.loggedWorkouts
+        val newNotification = NotificationItem(
+            id = UUID.randomUUID().toString(),
+            message = "Logged: $exerciseName (${sets.size} sets)",
+            timestamp = System.currentTimeMillis()
+        )
+        val updatedNotifs = listOf(newNotification) + user.notifications
+
+        val updatedUser = user.copy(
+            loggedWorkouts = updatedWorkouts,
+            notifications = updatedNotifs
+        )
+        _currentUser.value = updatedUser
+
+        viewModelScope.launch {
+            try {
+                db.collection("users").document(user.username)
+                    .update(
+                        mapOf(
+                            "loggedWorkouts" to updatedWorkouts,
+                            "notifications" to updatedNotifs
+                        )
+                    )
+                    .await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     fun confirmAndSaveProfile(onComplete: () -> Unit) {
-        val profile = _tempOnboarding.value
+        val initialNotification = NotificationItem(
+            id = UUID.randomUUID().toString(),
+            message = "Account created successfully! Welcome to Fitness Tracker.",
+            timestamp = System.currentTimeMillis()
+        )
+        val profile = _tempOnboarding.value.copy(notifications = listOf(initialNotification))
+
         viewModelScope.launch {
             try {
                 db.collection("users").document(profile.username).set(profile).await()
+                sessionManager.saveUsername(profile.username)
                 _currentUser.value = profile
                 onComplete()
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Fallback to local session on network error
+                sessionManager.saveUsername(profile.username)
                 _currentUser.value = profile
                 onComplete()
             }
@@ -98,7 +176,22 @@ class FitnessViewModel : ViewModel() {
             try {
                 val snapshot = db.collection("users").document(username.trim()).get().await()
                 if (snapshot.exists()) {
-                    val profile = snapshot.toObject(UserProfile::class.java)
+                    var profile = snapshot.toObject(UserProfile::class.java)!!
+
+                    // Add dynamic login notification
+                    val loginNotif = NotificationItem(
+                        id = UUID.randomUUID().toString(),
+                        message = "Recent Login to your Account",
+                        timestamp = System.currentTimeMillis()
+                    )
+                    val updatedNotifs = listOf(loginNotif) + profile.notifications
+                    profile = profile.copy(notifications = updatedNotifs)
+
+                    db.collection("users").document(profile.username)
+                        .update("notifications", updatedNotifs)
+                        .await()
+
+                    sessionManager.saveUsername(profile.username)
                     _currentUser.value = profile
                     onSuccess()
                 } else {
@@ -106,6 +199,42 @@ class FitnessViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 onError(e.localizedMessage ?: "Error during login")
+            }
+        }
+    }
+
+    fun logout(onLoggedOut: () -> Unit) {
+        sessionManager.clearSession()
+        _currentUser.value = null
+        onLoggedOut()
+    }
+
+    fun updateProfile(
+        name: String,
+        birthYear: Int,
+        contactNo: String,
+        avatarUri: Uri? = null
+    ) {
+        val current = _currentUser.value ?: return
+        val base64Str = if (avatarUri != null) {
+            ImageUtils.uriToBase64(getApplication(), avatarUri) ?: current.avatarBase64
+        } else {
+            current.avatarBase64
+        }
+
+        val updated = current.copy(
+            name = name,
+            birthYear = birthYear,
+            contactNo = contactNo,
+            avatarBase64 = base64Str
+        )
+        _currentUser.value = updated
+
+        viewModelScope.launch {
+            try {
+                db.collection("users").document(current.username).set(updated).await()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -119,13 +248,27 @@ class FitnessViewModel : ViewModel() {
             protein = protein
         )
         val updatedMeals = listOf(newMeal) + user.meals
-        val updatedUser = user.copy(meals = updatedMeals)
+
+        // Add dynamic meal notification
+        val mealNotif = NotificationItem(
+            id = UUID.randomUUID().toString(),
+            message = "You logged a meal: $name ($calories kcal)",
+            timestamp = System.currentTimeMillis()
+        )
+        val updatedNotifs = listOf(mealNotif) + user.notifications
+
+        val updatedUser = user.copy(meals = updatedMeals, notifications = updatedNotifs)
         _currentUser.value = updatedUser
 
         viewModelScope.launch {
             try {
                 db.collection("users").document(user.username)
-                    .update("meals", updatedMeals)
+                    .update(
+                        mapOf(
+                            "meals" to updatedMeals,
+                            "notifications" to updatedNotifs
+                        )
+                    )
                     .await()
             } catch (e: Exception) {
                 e.printStackTrace()

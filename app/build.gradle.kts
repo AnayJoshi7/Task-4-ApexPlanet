@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.anay.fitnesstracker"
-        minSdk = 24
+        minSdk = 30
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.18.0"))

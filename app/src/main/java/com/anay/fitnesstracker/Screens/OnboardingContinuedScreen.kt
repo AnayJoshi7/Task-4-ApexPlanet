@@ -1,4 +1,4 @@
-package com.anay.fitnesstracker.screens
+package com.anay.fitnesstracker.Screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +23,11 @@ import androidx.compose.ui.unit.sp
 import com.anay.fitnesstracker.components.NextPillButton
 import com.anay.fitnesstracker.ui.theme.*
 import com.anay.fitnesstracker.data.viewmodel.FitnessViewModel
+import com.anay.fitnesstracker.components.SplashBottomIcons
+import com.anay.fitnesstracker.components.SplashTopIcons
+import com.anay.fitnesstracker.components.icons
+
+
 
 @Composable
 fun OnboardingContinuedScreen(
@@ -50,15 +55,8 @@ fun OnboardingContinuedScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+            SplashTopIcons()
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Icon(Icons.Default.LocalDining, contentDescription = null, tint = Color.White.copy(0.85f), modifier = Modifier.size(28.dp))
-                Icon(Icons.Default.SportsGymnastics, contentDescription = null, tint = Color.White.copy(0.85f), modifier = Modifier.size(28.dp))
-                Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = Color.White.copy(0.85f), modifier = Modifier.size(28.dp))
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -125,6 +123,8 @@ fun OnboardingContinuedScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+            icons()
             Spacer(modifier = Modifier.height(24.dp))
         }
 

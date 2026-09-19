@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.anay.fitnesstracker.Routes
+import com.anay.fitnesstracker.data.WorkoutScheduleHelper
 import com.anay.fitnesstracker.data.viewmodel.FitnessViewModel
 import com.anay.fitnesstracker.data.viewmodel.QuoteViewModel
 
@@ -73,6 +75,48 @@ fun DashboardScreen(
     val quote = quoteViewModel.quote.collectAsState().value
     val isLoading = quoteViewModel.isLoading.collectAsState().value
     val error = quoteViewModel.error.collectAsState().value
+    val todayWorkout = WorkoutScheduleHelper.getTodayWorkout(
+        workoutFrequency = user?.workoutFrequency ?: "6 Days a Week",
+        splitName = user?.workoutSplit ?: "Push Pull Legs"
+    )
+
+    // 1. Calculate today's target exercise count based on schedule
+// In DashboardScreen.kt:
+    val targetExercisesToday = remember(todayWorkout.title) {
+        when (todayWorkout.title) {
+            "Push Day" -> 8
+            "Pull Day" -> 9
+            "Leg Day" -> 8
+            "Upper Body" -> 9
+            "Lower Body" -> 7
+            "Full Body" -> 9
+            else -> 0
+        }
+    }
+
+    // 2. Count distinct logged exercises for today (from midnight onwards)
+    val startOfTodayMillis = remember {
+        java.time.LocalDate.now()
+            .atStartOfDay(java.time.ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    }
+
+    val completedExercisesToday = remember(user?.loggedWorkouts) {
+        user?.loggedWorkouts
+            ?.filter { it.timestamp >= startOfTodayMillis }
+            ?.map { it.exerciseName }
+            ?.distinct()
+            ?.size ?: 0
+    }
+
+    // 3. Compute dynamic progress ratio and percentage
+    val progressFraction = if (targetExercisesToday > 0) {
+        (completedExercisesToday.toFloat() / targetExercisesToday.toFloat()).coerceIn(0f, 1f)
+    } else {
+        if (completedExercisesToday > 0) 1f else 0f
+    }
+    val progressPercent = (progressFraction * 100).toInt()
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
@@ -112,8 +156,13 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Progress Card
-            ProgressCard()
+            // Dynamic Today's Progress Card
+            TodayProgressCard(
+                completed = completedExercisesToday,
+                target = targetExercisesToday,
+                fraction = progressFraction,
+                percent = progressPercent
+            )
 
             Spacer(modifier = Modifier.height(36.dp))
 
@@ -181,11 +230,13 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Dynamic Workout Card
             WorkoutCard(
-                splitName = user?.workoutSplit ?: "Push Day",
-                workoutFrequency = user?.workoutFrequency ?: "6 Days a Week",
-                fitnessGoal = user?.fitnessGoal ?: "Maintain Weight"
+                title = todayWorkout.title,
+                muscles = todayWorkout.muscleGroups,
+                exerciseCount = todayWorkout.exerciseCountText,
+                onClick = {
+                    todayWorkout.route?.let { onNavigate(it) }
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -209,6 +260,80 @@ fun DashboardScreen(
             BottomNavigationBar(onNavigate = onNavigate)
 
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun TodayProgressCard(
+    completed: Int,
+    target: Int,
+    fraction: Float,
+    percent: Int
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(26.dp))
+            .background(CardBackground)
+            .padding(vertical = 28.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Today’s Progress",
+            color = TextWhite,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = if (target > 0) "$completed/$target" else "$completed",
+            color = TextWhite,
+            fontSize = 38.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = if (target > 0) "Workouts Completed" else "Rest Day Activity",
+            color = TextWhite,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Normal
+        )
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Dynamic Horizontal Progress Bar
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 110.dp, height = 12.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFF5E6065))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0xFFE4E4E6))
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = "$percent%",
+                color = TextWhite,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -304,74 +429,6 @@ fun MotivationCard(
 }
 
 @Composable
-private fun ProgressCard() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
-            .background(CardBackground)
-            .padding(vertical = 28.dp, horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Today’s Progress",
-            color = TextWhite,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "2/5",
-            color = TextWhite,
-            fontSize = 38.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        Text(
-            text = "Workouts Completed",
-            color = TextWhite,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Custom Horizontal 40% Progress Bar
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 100.dp, height = 12.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color(0xFF5E6065))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .fillMaxHeight()
-                        .background(Color(0xFFE4E4E6))
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Text(
-                text = "40%",
-                color = TextWhite,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-    }
-}
-
-@Composable
 private fun StatCard(
     title: String,
     value: String,
@@ -417,43 +474,26 @@ private fun StatCard(
 
 @Composable
 private fun WorkoutCard(
-    splitName: String,
-    workoutFrequency: String,
-    fitnessGoal: String
+    title: String,
+    muscles: String,
+    exerciseCount: String,
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .background(CardBackground)
+            .clickable { onClick() }
             .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = splitName,
-                color = TextWhite,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = "Assigned from $workoutFrequency",
-                color = TextWhite,
-                fontSize = 14.sp
-            )
-
+            Text(text = muscles, color = TextWhite, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Goal: $fitnessGoal",
-                color = TextMuted,
-                fontSize = 12.sp
-            )
+            Text(text = exerciseCount, color = TextMuted, fontSize = 12.sp)
         }
 
         Box(
